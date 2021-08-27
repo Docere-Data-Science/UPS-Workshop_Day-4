@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Introduction to Time Series</title>
+    <meta charset="utf-8" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Introduction to Time Series
+
+---
+
+
+
+
+
+
+
+
+class: center, middle, inverse
+# Introduction to Time Series
+
+---
+
+# Data Exploration to Data Analysis
+
+* What are the observations?
+
+* What variables do we have?
+
+--
+
+* What are the values of these variables like?
+
+--
+
+* What kinds of relationships are there among the variables we have?
+
+---
+
+# Time Series Data
+
+.center[
+*Time series data is a collection of quantities that are assembled over even intervals in time and ordered chronologically.*
+]
+
+--
+
+* Many potential goals with time series data:
+
+--
+
++ Visualizing and understanding the (present and past) data
+
+--
+
++ Predict future outcomes
+
+--
+
++ Making policy suggestions, etc.
+
+--
+
+.center[
+We'll focus on the first two here!
+]
+
+---
+
+# Examples for Use Today
+
+* From [*A Little Book of R For Time Series*](https://buildmedia.readthedocs.org/media/pdf/a-little-book-of-r-for-time-series/latest/a-little-book-of-r-for-time-series.pdf)
+
+* Datasets from Rob Hyndman's [Time Series Data Library](https://pkg.yangzhuoranyang.com/tsdl/)
+
+1. Age of death of successive kings of England (kings.txt)
+
+2. Number of births per month in New York city from January 1946 to December 1959 (nybirths.txt)
+
+3. Monthly sales for a souvenir shop at a beach resort town in Queensland, Australia for January 1987 to December 1993 (fancy.txt)
+
+---
+
+# Importing the Kings' Deaths Data
+
+
+```r
+kings &lt;- scan(here::here("Data", "kings.txt"),skip=3)
+kings
+```
+
+```
+##  [1] 60 43 67 50 56 42 50 65 68 43 65 34 47 34 49 41 13 35 53 56 16 43 69 59 48
+## [26] 59 86 55 68 51 33 49 67 77 81 67 71 81 68 70 77 56
+```
+
+* Create *time series object* out of these data
+
+
+```r
+kingsts &lt;- ts(kings)
+kingsts
+```
+
+```
+## Time Series:
+## Start = 1 
+## End = 42 
+## Frequency = 1 
+##  [1] 60 43 67 50 56 42 50 65 68 43 65 34 47 34 49 41 13 35 53 56 16 43 69 59 48
+## [26] 59 86 55 68 51 33 49 67 77 81 67 71 81 68 70 77 56
+```
+
+---
+
+# Importing the NY Births Data
+
+
+```r
+births &lt;- scan(here::here("Data", "nybirths.txt"))
+head(births)
+```
+
+```
+## [1] 26.663 23.598 26.931 24.740 25.806 24.364
+```
+
+* Create *time series object* out of these data
+
+
+```r
+birthsts &lt;- ts(births, frequency=12, start=c(1946,1))
+birthsts
+```
+
+```
+##         Jan    Feb    Mar    Apr    May    Jun    Jul    Aug    Sep    Oct
+## 1946 26.663 23.598 26.931 24.740 25.806 24.364 24.477 23.901 23.175 23.227
+## 1947 21.439 21.089 23.709 21.669 21.752 20.761 23.479 23.824 23.105 23.110
+## 1948 21.937 20.035 23.590 21.672 22.222 22.123 23.950 23.504 22.238 23.142
+## 1949 21.548 20.000 22.424 20.615 21.761 22.874 24.104 23.748 23.262 22.907
+## 1950 22.604 20.894 24.677 23.673 25.320 23.583 24.671 24.454 24.122 24.252
+## 1951 23.287 23.049 25.076 24.037 24.430 24.667 26.451 25.618 25.014 25.110
+## 1952 23.798 22.270 24.775 22.646 23.988 24.737 26.276 25.816 25.210 25.199
+## 1953 24.364 22.644 25.565 24.062 25.431 24.635 27.009 26.606 26.268 26.462
+## 1954 24.657 23.304 26.982 26.199 27.210 26.122 26.706 26.878 26.152 26.379
+## 1955 24.990 24.239 26.721 23.475 24.767 26.219 28.361 28.599 27.914 27.784
+## 1956 26.217 24.218 27.914 26.975 28.527 27.139 28.982 28.169 28.056 29.136
+## 1957 26.589 24.848 27.543 26.896 28.878 27.390 28.065 28.141 29.048 28.484
+## 1958 27.132 24.924 28.963 26.589 27.931 28.009 29.229 28.759 28.405 27.945
+## 1959 26.076 25.286 27.660 25.951 26.398 25.565 28.865 30.000 29.261 29.012
+##         Nov    Dec
+## 1946 21.672 21.870
+## 1947 21.759 22.073
+## 1948 21.059 21.573
+## 1949 21.519 22.025
+## 1950 22.084 22.991
+## 1951 22.964 23.981
+## 1952 23.162 24.707
+## 1953 25.246 25.180
+## 1954 24.712 25.688
+## 1955 25.693 26.881
+## 1956 26.291 26.987
+## 1957 26.634 27.735
+## 1958 25.912 26.619
+## 1959 26.992 27.897
+```
+
+---
+
+# Importing the Souvenir Data
+
+
+```r
+souvenir &lt;- scan(here::here("Data", "fancy.txt"))
+head(souvenir)
+```
+
+```
+## [1] 1664.81 2397.53 2840.71 3547.29 3752.96 3714.74
+```
+
+* Create *time series object* out of these data
+
+
+```r
+souvenirts &lt;- ts(souvenir, frequency=12, start=c(1987, 1))
+souvenirts
+```
+
+```
+##            Jan       Feb       Mar       Apr       May       Jun       Jul
+## 1987   1664.81   2397.53   2840.71   3547.29   3752.96   3714.74   4349.61
+## 1988   2499.81   5198.24   7225.14   4806.03   5900.88   4951.34   6179.12
+## 1989   4717.02   5702.63   9957.58   5304.78   6492.43   6630.80   7349.62
+## 1990   5921.10   5814.58  12421.25   6369.77   7609.12   7224.75   8121.22
+## 1991   4826.64   6470.23   9638.77   8821.17   8722.37  10209.48  11276.55
+## 1992   7615.03   9849.69  14558.40  11587.33   9332.56  13082.09  16732.78
+## 1993  10243.24  11266.88  21826.84  17357.33  15997.79  18601.53  26155.15
+##            Aug       Sep       Oct       Nov       Dec
+## 1987   3566.34   5021.82   6423.48   7600.60  19756.21
+## 1988   4752.15   5496.43   5835.10  12600.08  28541.72
+## 1989   8176.62   8573.17   9690.50  15151.84  34061.01
+## 1990   7979.25   8093.06   8476.70  17914.66  30114.41
+## 1991  12552.22  11637.39  13606.89  21822.11  45060.69
+## 1992  19888.61  23933.38  25391.35  36024.80  80721.71
+## 1993  28586.52  30505.41  30821.33  46634.38 104660.67
+```
+
+---
+
+### Visualize the Kings' Deaths Data (`plot.ts`)
+
+
+```r
+plot.ts(kingsts)
+```
+
+![](01-TimeSeries_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+
+---
+
+### Visualize the Kings' Death Data (`ggplot`)
+
+```r
+tibble(kings) %&gt;%
+  ggplot(aes(x = 1:length(kings), y = kings)) +
+  geom_point() +
+  geom_line()
+```
+
+![](01-TimeSeries_files/figure-html/unnamed-chunk-8-1.png)&lt;!-- --&gt;
+
+---
+
+### Visualize the NY Births Data
+
+
+```r
+plot.ts(birthsts)
+```
+
+&lt;img src="01-TimeSeries_files/figure-html/unnamed-chunk-9-1.png" width="50%" height="50%" /&gt;
+
+* What do you notice?
+
+---
+
+### Visualize the Souvenir Data
+
+
+```r
+plot.ts(souvenirts)
+```
+
+&lt;img src="01-TimeSeries_files/figure-html/unnamed-chunk-10-1.png" width="50%" height="50%" /&gt;
+
+* What do you notice here compared to the other time series?
+
+---
+
+### Transforming the Souvenir Data
+
+* Because we like simpler, additive models...
+
+
+```r
+logsouvenirts &lt;- log(souvenirts)
+plot.ts(logsouvenirts)
+```
+
+&lt;img src="01-TimeSeries_files/figure-html/unnamed-chunk-11-1.png" width="50%" height="50%" /&gt;
+
+---
+
+# What are Time Series "patterns" comprised of?
+
+* Think back to what we observed in our three time series visualizations...
+
+--
+
+* A **trend** component
+
+--
+
+* A **seasonal** component
+
+--
+
+* An **irregular** (or **random noise**) component
+
+--
+
+* All 3 of these things may be interesting in their own right!
+
+---
+
+## Identifying the Components for the NY Births
+
+.center[
+
+```r
+birthstscomponents &lt;- decompose(birthsts)
+plot(birthstscomponents)
+```
+
+&lt;img src="01-TimeSeries_files/figure-html/unnamed-chunk-12-1.png" width="50%" height="50%" /&gt;
+]
+
+---
+
+## Details of the Seasonal Component
+
+* **Autocorrelation**: correlation between a time series and a lagged version of itself
+
+.center[
+
+```r
+acf(births)
+```
+
+&lt;img src="01-TimeSeries_files/figure-html/unnamed-chunk-13-1.png" width="50%" height="50%" /&gt;
+]
+
+---
+
+## Seasonal Component Continued
+
+.pull-left[
+![](01-TimeSeries_files/figure-html/unnamed-chunk-14-1.png)&lt;!-- --&gt;
+]
+.pull-left[
+![](01-TimeSeries_files/figure-html/unnamed-chunk-15-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Now It's Your Turn
+
+.center[**Go through these same steps with the Souvenir Data**]
+
+1. Create the visualization of the original time series
+
+2. Create the visualization of the logged time series
+
+3. Decompose the time series into the trend, seasonal, and irregular components
+
+4. Create the Autocorrelation Function (ACF) plot to better understand the autocorrelation.
+ 
+5. Investigate and comment on what you see in each of the components and the ACF plot.
+
+---
+
+# Making Forecasts
+
+* This is a broad and tricky business!
+
+--
+
+* Many methods out there for different circumstances...
+
+--
+
+* If you have a time series that can be described using an additive model with increasing or decreasing trend and no seasonality, we can use **Holt's exponential smoothing** to make short-term forecasts
+
+--
+
+* Does our NY Births time series fit this description?
+
+--
+
+* Could some form of it fit our description?
+
+---
+
+# Non-Seasonal NY Births
+
+
+```r
+birthstsnoseason &lt;- birthsts - birthstscomponents$seasonal
+plot(birthstsnoseason)
+```
+
+&lt;img src="01-TimeSeries_files/figure-html/unnamed-chunk-16-1.png" width="50%" height="50%" /&gt;
+
+---
+
+## Holt Winters Exponential Smoothing
+
+* `gamma = FALSE` means a non-seasonal model is fitted
+
+
+```r
+birthsforecasts &lt;- HoltWinters(birthstsnoseason, gamma = FALSE)
+plot(birthsforecasts)
+```
+
+&lt;img src="01-TimeSeries_files/figure-html/unnamed-chunk-17-1.png" width="50%" height="50%" /&gt;
+
+---
+
+### Wait a Minute...We Usually Want the Future!
+
+* Need the `forecast` package in `R`
+
+.center[
+
+```r
+library(forecast)
+birthsforecasts2 &lt;- forecast(birthsforecasts, h = 12)
+plot(birthsforecasts2)
+```
+
+&lt;img src="01-TimeSeries_files/figure-html/unnamed-chunk-18-1.png" width="50%" height="50%" /&gt;
+]
+
+---
+
+# Now It's Your Turn Again
+
+.center[**Using the Souvenir Data again...**]
+
+1. Use the `HoltWinters` function to make forecasts for your existing data (note: should `gamma = TRUE` this time?)
+
+2. Use the `forecast` function to make forecasts for the next 48 time periods. What do you notice about the prediction intervals?
+
+---
+
+## Going Beyond Exponential Smoothing for Forecasts
+
+* Exponential smoothing methods are useful for making forecasts, and make no assumptions about the correlations between successive values
+
+--
+
+* In some cases you can make better predictive models by taking correlations into account: **Autoregressive Integrated Moving Average (ARIMA) models**
+
+--
+
+1. The *autoregressive component* is the relationship between the current dependent variable and the dependent variable at lagged time periods.
+
+2. The *integrated component* refers to the use of transforming the data by subtracting past values from the current values to make the data **stationary** (i.e. statistical characteristics of that series are unchanged by shifts in time).
+
+3. The *moving average component* refers to the dependency between the dependent variable and past values of the irregular term.
+
+.center[General Model Notation: ARIMA(p,d,q)]
+
+---
+
+# Are the Kings' Deaths Data Stationary?
+
+&lt;img src="01-TimeSeries_files/figure-html/unnamed-chunk-19-1.png" width="50%" height="50%" /&gt;
+
+--
+
+* No, the mean changes in time.
+
+--
+
+---
+
+# Transforming for Stationarity
+
+* Many ways to transform data to be stationary
+
+--
+
+1. De-trend
+
+2. Difference the original time series data
+
+3. Transform via a function (e.g. log)
+
+...and more!
+
+---
+
+# Determining the Best ARIMA Model
+
+* We could go through the process of identifying *p*, *d*, and *q* ourselves using tools like the autocorrelation function.
+
+--
+
+* The `forecast` package comes with a handy function called `auto.arima` which will return the best ARIMA model according to criteria like AIC or BIC, subject to constraints we provide it!
+
+---
+
+# `auto.arima()` for the Kings' Deaths Data
+
+.center[
+
+```r
+auto.arima(kings)
+```
+
+```
+## Series: kings 
+## ARIMA(0,1,1) 
+## 
+## Coefficients:
+##           ma1
+##       -0.7218
+## s.e.   0.1208
+## 
+## sigma^2 estimated as 236.2:  log likelihood=-170.06
+## AIC=344.13   AICc=344.44   BIC=347.56
+```
+]
+
+---
+
+## Making Forecasts for ARIMA Models
+
+.center[
+
+```r
+kingsarima &lt;- auto.arima(kings)
+kingsforecasts &lt;- forecast(kingsarima, h = 5)
+plot(kingsforecasts)
+```
+
+&lt;img src="01-TimeSeries_files/figure-html/unnamed-chunk-21-1.png" width="50%" height="50%" /&gt;
+]
+
+---
+
+# It's Your Turn One More Time
+
+.center[**Using the Souvenir Data again...**]
+
+1. Use the `forecast` package to determine the best ARIMA model for the log souvenir data.
+
+2. Use the `forecast` function to make forecasts for the next 48 time periods. How does this output compare to what you found before?
+
+---
+
+# The Sky's the Limit
+
+* There are many other techniques for modeling time series data!
+
+* It's possible to include predictors or other variables (Cross-Correlation or Vector Autoregressive Models)
+
+* A nice high-level [blog post](https://www.aptech.com/blog/introduction-to-the-fundamentals-of-time-series-data-and-analysis/)
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

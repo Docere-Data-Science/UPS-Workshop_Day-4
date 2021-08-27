@@ -1,0 +1,445 @@
+---
+title: "The Tidymodels Framework"
+resource_files:
+- appforthat.jpg
+output:
+  xaringan::moon_reader:
+    css: xaringan-themer.css
+    lib_dir: libs
+    nature:
+      highlightLines: yes
+      highlightStyle: github
+      countIncrementalSlides: false
+      ratio: '16:9'
+
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE, digits = 4, scipen=999)
+library(tidyverse)
+library(tidymodels)
+library(flair)
+library(glmnet)
+```
+
+```{r xaringan-themer, include=FALSE}
+library(xaringanthemer)
+style_mono_light(
+  base_color = "#26116c",
+  text_bold_color = "#fd5e53",
+  title_slide_text_color = "#fff8e7",
+  background_color = "#fff8e7",
+  header_font_google = google_font("Roboto"),
+  text_font_google   = google_font("Roboto Condensed"),
+  code_font_google   = google_font("Droid Mono")
+)
+```
+
+```{css, echo = FALSE}
+.red{ color: red; }
+.blue{ color: blue; }
+.huge {
+  font-size: 200%;
+}
+.large {
+  font-size: 150%;
+}
+.tiny {
+  font-size: 50%;
+}
+```
+
+
+---
+class: center, middle, inverse
+
+# A workflow-based approach to modeling
+
+---
+
+## Workflow
+
+
+0. **Clean** the data
+
+--
+
+1. **Specify** the model(s)
+
+--
+
+2. Create a **recipe** for pre-processing
+
+--
+
+3. Construct a **workflow** establishing the modeling process.
+
+--
+
+4. **Fit** the model
+
+--
+
+5. **Evaluate** the model fit.
+
+---
+class: center, middle, inverse
+
+## Clean the data
+
+---
+## Clean the data
+
+
+* Check data summaries and plots for anomalies.
+
+--
+
+* Are there any outliers that may be due to **data entry error**?
+
+--
+
+* Has **R** properly interpreted the *variable types*?
+
+--
+
+* Is the data in **tidy format**?
+
+--
+
+*Cleaning* (as opposed to *pre-processing*) = correcting "mistakes".
+
+---
+
+## Data: The NYC flights dataset
+
+```{r}
+library(nycflights13)
+
+set.seed(384)
+
+flights <- flights %>% sample_n(5000)
+
+summary(flights)
+```
+---
+
+```{r}
+flight_data <- 
+  flights %>% 
+  mutate(
+    # Convert the arrival delay to a factor
+    arr_delay = ifelse(arr_delay >= 30, "late", "on_time"),
+    arr_delay = factor(arr_delay),
+    # We will use the date (not date-time) in the recipe below
+    date = as.Date(time_hour)
+  ) %>% 
+  # Include the weather data
+  inner_join(weather, by = c("origin", "time_hour")) %>% 
+  # Only retain the specific columns we will use
+  select(dep_time, flight, origin, dest, air_time, distance, 
+         carrier, date, arr_delay, time_hour) %>% 
+  # Exclude missing data
+  drop_na() %>% 
+  # For creating models, it is better to have qualitative columns
+  # encoded as factors (instead of character strings)
+  mutate_if(is.character, as.factor)
+```
+
+
+---
+class: center, middle, inverse
+
+## Specify the model
+
+---
+## Specify the model
+
+In `tidymodels`, you need three pieces of information to **specify** a model:
+
+1. The **type** of model.
+
+2. The **engine** - i.e., which R package implementation you will rely on
+
+3. The **mode**: classification or regression.
+
+--
+
+*Optional* information: various parameters of the model
+
+---
+## Specify the model
+
+```{r}
+lin_mod_spec <- linear_reg() %>%
+  set_mode("regression") %>%
+  set_engine("lm")
+
+
+logistic_mod_spec <- logistic_reg() %>%
+  set_mode("classification") %>%
+  set_engine("glm")
+  
+```
+
+--
+
+**NOTE:** We have not said anything about the dataset here!
+
+---
+class: center, middle, inverse
+
+## Recipe for pre-processing
+
+---
+
+## Recipes
+
+**Pre-processing** includes things like:
+
+* **Transforming** variables to be approximately Normal
+
+* Dealing with **missing data**
+
+* **Omitting** certain variables from the model.
+
+* Converting categorical variables to **dummy variables**.
+
+* Adding **interaction terms** to your model
+
+* *(Advanced)* Applying **dimension reduction** to the data.
+
+--
+
+*These are all model-related choices!!!*
+
+---
+
+## Recipes
+
+All a `recipe` **needs** to have is a *formula* and a *dataset*:
+
+```{r}
+flights_rec <- 
+  recipe(arr_delay ~ ., data = flight_data) 
+```
+
+--
+
+Note 1:  The ` ~ .` means "use all available columns" as predictors.  Handy, but dangerous!
+
+--
+
+Note 2: Here `flight_data` is a kind of "example data structure".  It tells the recipe what we can expect, but nothing is computed yet.
+
+---
+
+## Recipes
+
+Now we can add other pre-processing steps to the recipe:
+
+--
+
+Note that the `flight` and `time_hour` columns uniquely identify each flight, and should not be used:
+
+```{r}
+flights_rec <- 
+  recipe(arr_delay ~ ., data = flight_data) %>% 
+  update_role(flight, time_hour, new_role = "ID") 
+```
+
+---
+
+Instead of using the `date` column as it stands, let's just note important dates:
+
+```{r}
+flights_rec <- 
+  recipe(arr_delay ~ ., data = flight_data) %>% 
+  update_role(flight, time_hour, new_role = "ID") %>% 
+  step_date(date, features = c("dow", "month")) %>%               
+  step_holiday(date, holidays = timeDate::listHolidays("US")) %>% 
+  step_rm(date)
+```
+
+---
+
+Turn all categorical variables into dummy variables, and drop any predictors that have only one observation:
+
+```{r}
+flights_rec <- 
+  recipe(arr_delay ~ ., data = flight_data) %>% 
+  update_role(flight, time_hour, new_role = "ID") %>% 
+  step_date(date, features = c("dow", "month")) %>%               
+  step_holiday(date, holidays = timeDate::listHolidays("US")) %>% 
+  step_rm(date) %>% 
+  step_dummy(all_nominal(), -all_outcomes()) %>% 
+  step_zv(all_predictors())
+```
+
+---
+## Final Recipe
+
+```{r}
+flights_rec
+```
+
+---
+class: center, middle, inverse
+
+## Make a workflow
+
+---
+
+## Workflow
+
+```{r}
+flights_wflow <- workflow() %>%
+  add_model(logistic_mod_spec) %>%
+  add_recipe(flights_rec)
+```
+
+--
+
+**Nothing has yet been calculated!!!**
+
+
+---
+class: center, middle, inverse
+
+## Fit the model
+
+---
+
+## Fitting directly on data
+
+```{r}
+model_fit <- flights_wflow %>%
+  fit(flight_data)
+
+summary(model_fit)
+```
+
+---
+
+```{r}
+model_fit %>% pull_workflow_fit()
+```
+
+---
+
+```{r}
+wflow_fit <- model_fit %>% pull_workflow_fit() 
+
+wflow_fit$fit %>% summary()
+```
+
+---
+
+```{r}
+model_fit %>% pull_workflow_fit()  %>% tidy()
+
+```
+
+
+
+---
+class: center, middle
+
+## Evaluate the model
+
+---
+
+## Test/Training
+
+We would like to know how this model will do on *future data*, not just how it fit on the *currently observed* data.
+
+--
+
+Let's set aside 25% of our data to be a "test set":  It will not be used in the **model fitting**, but it will be used for **model evaluation**.
+
+---
+
+## Test/training
+
+
+```{r}
+# Put 3/4 of the data into the training set 
+data_split <- initial_split(flight_data, prop = 3/4)
+
+# Create data frames for the two sets:
+train_data <- training(data_split)
+test_data  <- testing(data_split)
+```
+
+---
+
+## First, fit the model on the training data:
+
+```{r}
+model_fit <- flights_wflow %>%
+  fit(train_data)
+```
+
+---
+
+## Then, evaluate the model on the test data:
+
+```{r}
+predict(model_fit, test_data)
+```
+
+---
+
+```{r}
+predict(model_fit, test_data, type = "prob")
+```
+
+---
+
+## Comparing predictions to reality
+
+```{r}
+flights_pred <- test_data %>% 
+        select(arr_delay, time_hour, flight) %>%
+  bind_cols(
+    predict(model_fit, test_data),
+    predict(model_fit, test_data, type = "prob")
+  )
+
+flights_pred
+```
+
+---
+## Comparing predictions to reality
+
+```{r}
+flights_pred %>%
+  count(.pred_class,
+        arr_delay)
+```
+---
+
+```{r}
+flights_pred %>%
+  ggplot(aes(x = .pred_late, fill = arr_delay)) +
+  geom_density(alpha = 0.5)
+```
+
+---
+
+## Evaluating by metrics
+
+```{r}
+flights_pred %>%
+  accuracy(estimate = .pred_class,
+           truth = arr_delay)
+```
+
+---
+
+```{r}
+flights_pred %>% 
+  roc_curve(truth = arr_delay, .pred_late) %>% 
+  autoplot()
+```
+

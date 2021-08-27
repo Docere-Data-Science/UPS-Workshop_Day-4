@@ -1,0 +1,430 @@
+---
+title: "Introduction to Time Series"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: xaringan-themer.css
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+library(tidyverse)
+library(here)
+```
+
+```{r xaringan-themer, include=FALSE}
+library(xaringanthemer)
+solarized_light()
+```
+
+
+
+class: center, middle, inverse
+# Introduction to Time Series
+
+---
+
+# Data Exploration to Data Analysis
+
+* What are the observations?
+
+* What variables do we have?
+
+--
+
+* What are the values of these variables like?
+
+--
+
+* What kinds of relationships are there among the variables we have?
+
+---
+
+# Time Series Data
+
+.center[
+*Time series data is a collection of quantities that are assembled over even intervals in time and ordered chronologically.*
+]
+
+--
+
+* Many potential goals with time series data:
+
+--
+
++ Visualizing and understanding the (present and past) data
+
+--
+
++ Predict future outcomes
+
+--
+
++ Making policy suggestions, etc.
+
+--
+
+.center[
+We'll focus on the first two here!
+]
+
+---
+
+# Examples for Use Today
+
+* From [*A Little Book of R For Time Series*](https://buildmedia.readthedocs.org/media/pdf/a-little-book-of-r-for-time-series/latest/a-little-book-of-r-for-time-series.pdf)
+
+* Datasets from Rob Hyndman's [Time Series Data Library](https://pkg.yangzhuoranyang.com/tsdl/)
+
+1. Age of death of successive kings of England (kings.txt)
+
+2. Number of births per month in New York city from January 1946 to December 1959 (nybirths.txt)
+
+3. Monthly sales for a souvenir shop at a beach resort town in Queensland, Australia for January 1987 to December 1993 (fancy.txt)
+
+---
+
+# Importing the Kings' Deaths Data
+
+```{r}
+kings <- scan(here::here("Data", "kings.txt"),skip=3)
+kings
+```
+
+* Create *time series object* out of these data
+
+```{r}
+kingsts <- ts(kings)
+kingsts
+```
+
+---
+
+# Importing the NY Births Data
+
+```{r}
+births <- scan(here::here("Data", "nybirths.txt"))
+head(births)
+```
+
+* Create *time series object* out of these data
+
+```{r}
+birthsts <- ts(births, frequency=12, start=c(1946,1))
+birthsts
+```
+
+---
+
+# Importing the Souvenir Data
+
+```{r}
+souvenir <- scan(here::here("Data", "fancy.txt"))
+head(souvenir)
+```
+
+* Create *time series object* out of these data
+
+```{r}
+souvenirts <- ts(souvenir, frequency=12, start=c(1987, 1))
+souvenirts
+```
+
+---
+
+### Visualize the Kings' Deaths Data (`plot.ts`)
+
+```{r}
+plot.ts(kingsts)
+```
+
+---
+
+### Visualize the Kings' Death Data (`ggplot`)
+```{r}
+tibble(kings) %>%
+  ggplot(aes(x = 1:length(kings), y = kings)) +
+  geom_point() +
+  geom_line()
+```
+
+---
+
+### Visualize the NY Births Data
+
+```{r, out.height='50%', out.width='50%'}
+plot.ts(birthsts)
+```
+
+* What do you notice?
+
+---
+
+### Visualize the Souvenir Data
+
+```{r, out.height='50%', out.width='50%'}
+plot.ts(souvenirts)
+```
+
+* What do you notice here compared to the other time series?
+
+---
+
+### Transforming the Souvenir Data
+
+* Because we like simpler, additive models...
+
+```{r, out.height='50%', out.width='50%'}
+logsouvenirts <- log(souvenirts)
+plot.ts(logsouvenirts)
+```
+
+---
+
+# What are Time Series "patterns" comprised of?
+
+* Think back to what we observed in our three time series visualizations...
+
+--
+
+* A **trend** component
+
+--
+
+* A **seasonal** component
+
+--
+
+* An **irregular** (or **random noise**) component
+
+--
+
+* All 3 of these things may be interesting in their own right!
+
+---
+
+## Identifying the Components for the NY Births
+
+.center[
+```{r, out.height='50%', out.width='50%'}
+birthstscomponents <- decompose(birthsts)
+plot(birthstscomponents)
+```
+]
+
+---
+
+## Details of the Seasonal Component
+
+* **Autocorrelation**: correlation between a time series and a lagged version of itself
+
+.center[
+```{r, out.height='50%', out.width='50%'}
+acf(births)
+```
+]
+
+---
+
+## Seasonal Component Continued
+
+.pull-left[
+```{r, echo = F}
+plot(birthstscomponents$seasonal)
+```
+]
+.pull-left[
+```{r, echo = F, warning = F}
+library(TSstudio)
+acf(ts_reshape(birthstscomponents$seasonal, type = "long", frequency = 12)$value,
+    main = "Autocorrelation of Seasonal Component")
+```
+]
+
+---
+
+# Now It's Your Turn
+
+.center[**Go through these same steps with the Souvenir Data**]
+
+1. Create the visualization of the original time series
+
+2. Create the visualization of the logged time series
+
+3. Decompose the time series into the trend, seasonal, and irregular components
+
+4. Create the Autocorrelation Function (ACF) plot to better understand the autocorrelation.
+ 
+5. Investigate and comment on what you see in each of the components and the ACF plot.
+
+---
+
+# Making Forecasts
+
+* This is a broad and tricky business!
+
+--
+
+* Many methods out there for different circumstances...
+
+--
+
+* If you have a time series that can be described using an additive model with increasing or decreasing trend and no seasonality, we can use **Holt's exponential smoothing** to make short-term forecasts
+
+--
+
+* Does our NY Births time series fit this description?
+
+--
+
+* Could some form of it fit our description?
+
+---
+
+# Non-Seasonal NY Births
+
+```{r, out.height='50%', out.width='50%'}
+birthstsnoseason <- birthsts - birthstscomponents$seasonal
+plot(birthstsnoseason)
+```
+
+---
+
+## Holt Winters Exponential Smoothing
+
+* `gamma = FALSE` means a non-seasonal model is fitted
+
+```{r, out.height='50%', out.width='50%'}
+birthsforecasts <- HoltWinters(birthstsnoseason, gamma = FALSE)
+plot(birthsforecasts)
+```
+
+---
+
+### Wait a Minute...We Usually Want the Future!
+
+* Need the `forecast` package in `R`
+
+.center[
+```{r, out.height='50%', out.width='50%', warning = F, message = F}
+library(forecast)
+birthsforecasts2 <- forecast(birthsforecasts, h = 12)
+plot(birthsforecasts2)
+```
+]
+
+---
+
+# Now It's Your Turn Again
+
+.center[**Using the Souvenir Data again...**]
+
+1. Use the `HoltWinters` function to make forecasts for your existing data (note: should `gamma = TRUE` this time?)
+
+2. Use the `forecast` function to make forecasts for the next 48 time periods. What do you notice about the prediction intervals?
+
+---
+
+## Going Beyond Exponential Smoothing for Forecasts
+
+* Exponential smoothing methods are useful for making forecasts, and make no assumptions about the correlations between successive values
+
+--
+
+* In some cases you can make better predictive models by taking correlations into account: **Autoregressive Integrated Moving Average (ARIMA) models**
+
+--
+
+1. The *autoregressive component* is the relationship between the current dependent variable and the dependent variable at lagged time periods.
+
+2. The *integrated component* refers to the use of transforming the data by subtracting past values from the current values to make the data **stationary** (i.e. statistical characteristics of that series are unchanged by shifts in time).
+
+3. The *moving average component* refers to the dependency between the dependent variable and past values of the irregular term.
+
+.center[General Model Notation: ARIMA(p,d,q)]
+
+---
+
+# Are the Kings' Deaths Data Stationary?
+
+```{r, out.height='50%', out.width='50%', echo = F}
+plot(kingsts)
+```
+
+--
+
+* No, the mean changes in time.
+
+--
+
+---
+
+# Transforming for Stationarity
+
+* Many ways to transform data to be stationary
+
+--
+
+1. De-trend
+
+2. Difference the original time series data
+
+3. Transform via a function (e.g. log)
+
+...and more!
+
+---
+
+# Determining the Best ARIMA Model
+
+* We could go through the process of identifying *p*, *d*, and *q* ourselves using tools like the autocorrelation function.
+
+--
+
+* The `forecast` package comes with a handy function called `auto.arima` which will return the best ARIMA model according to criteria like AIC or BIC, subject to constraints we provide it!
+
+---
+
+# `auto.arima()` for the Kings' Deaths Data
+
+.center[
+```{r, out.height='50%', out.width='50%'}
+auto.arima(kings)
+```
+]
+
+---
+
+## Making Forecasts for ARIMA Models
+
+.center[
+```{r, out.height='50%', out.width='50%'}
+kingsarima <- auto.arima(kings)
+kingsforecasts <- forecast(kingsarima, h = 5)
+plot(kingsforecasts)
+```
+]
+
+---
+
+# It's Your Turn One More Time
+
+.center[**Using the Souvenir Data again...**]
+
+1. Use the `forecast` package to determine the best ARIMA model for the log souvenir data.
+
+2. Use the `forecast` function to make forecasts for the next 48 time periods. How does this output compare to what you found before?
+
+---
+
+# The Sky's the Limit
+
+* There are many other techniques for modeling time series data!
+
+* It's possible to include predictors or other variables (Cross-Correlation or Vector Autoregressive Models)
+
+* A nice high-level [blog post](https://www.aptech.com/blog/introduction-to-the-fundamentals-of-time-series-data-and-analysis/)
